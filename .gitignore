@@ -1,9 +1,9 @@
+*.gitkeep
+!.gitkeep
 .env
 node_modules
-logs/
 dist
-debug/*
-state/*
+*.7z
 37_v2.png
 error.txt
 install.txt
@@ -12,4 +12,18 @@ numbers.txt
 output.png
 package-lock.json
 pm2_error.log
-*.7z
+
+# Ignore everything in these directories
+debug/*
+state/*
+logs/*
+
+# Unignore all subdirectories (so Git can traverse into them)
+!debug/**/
+!state/**/
+!logs/**/
+
+# Include .gitkeep files in these directories and their subdirectories
+!debug/**/.gitkeep
+!state/**/.gitkeep
+!logs/**/.gitkeep

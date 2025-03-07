@@ -4,6 +4,24 @@ if "%1"=="" (
     exit
 )
 
+
+echo Checking for updates...
+
+:: Check if the current directory is a Git repository
+git -C "%~dp0" rev-parse --is-inside-work-tree >nul 2>&1
+if %errorlevel% neq 0 (
+  echo This is not a Git repository. Ignoring pull operation.
+) else (
+  :: Pull the latest updates from the repository
+  git -C "%~dp0" pull origin main >nul 2>&1
+  if %errorlevel% neq 0 (
+    echo Failed to pull the latest updates from the repository.
+  ) else (
+    echo Updated successfully.
+  )
+)
+
+
 echo Starting Chrome with remote debugging...
 
 :: Check if Chrome is already running
