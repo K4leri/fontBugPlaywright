@@ -1,0 +1,15 @@
+.env
+node_modules
+logs/
+dist
+debug/*
+state/*
+37_v2.png
+error.txt
+install.txt
+node_pid.txt
+numbers.txt
+output.png
+package-lock.json
+pm2_error.log
+*.7z

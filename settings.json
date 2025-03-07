@@ -1,0 +1,6 @@
+{
+  "headless": false,
+  "browserType": "chromium",
+  "threads": 1,
+  "onlyRead": false
+}
