@@ -17,15 +17,7 @@ export default class Methods extends BrowserAutomation {
     this.popupService = new PopupService(this);
     this.imageService = new ImageService(this);
     this.authService = new AuthService(this, this.popupService);
-
-    // this.setupHeapSnapshot();
   }
-
-  // private setupHeapSnapshot() {
-  //   process.on("SIGUSR2", () => {
-  //     generateHeapSnapshot();
-  //   });
-  // }
 
   public async initialize() {
     await this.prepare();
@@ -63,13 +55,10 @@ export default class Methods extends BrowserAutomation {
         }
 
         if (misMatchPercentage !== 0) {
-          logger.error(
-            `Расхождение с главным банером: ${misMatchPercentage} %`,
-            { threadId: this.threadId }
-          );
-
           this.writeToFile(buffer);
-          throw new Error(`Failed to start cause of wrong coordinates`);
+          throw new Error(
+            `Wrong coordinates: Расхождение с главным банером: ${misMatchPercentage} %`
+          );
         }
         attempts++;
         await this.sleep(1000);

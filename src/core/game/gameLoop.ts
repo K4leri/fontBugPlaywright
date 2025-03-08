@@ -64,7 +64,7 @@ export class GameLoop {
     }
   }
 
-  private async compareAndLogImage(processedBuffer: PNG) {
+  private async compareImage(processedBuffer: PNG) {
     if (this.isDevMode) {
       this.timeExecution = Date.now();
     }
@@ -141,7 +141,7 @@ export class GameLoop {
         if (!processedBuffer) continue;
         this.resetLoop();
 
-        const comparisonResult = await this.compareAndLogImage(processedBuffer);
+        const comparisonResult = await this.compareImage(processedBuffer);
         await this.logComparisonResult(comparisonResult);
 
         await this.sleep(GameLoop.waitAfterCompare);

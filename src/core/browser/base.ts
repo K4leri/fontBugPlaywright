@@ -81,7 +81,7 @@ class BrowserAutomation {
     while (retries < maxRetries) {
       try {
         const browser = await chromium.connectOverCDP("http://127.0.0.1:9222");
-        logger.info(` Connected to browser via CDP`, {
+        logger.info(`Connected to browser via CDP`, {
           threadId: this.threadId,
         });
         return browser; // Return the connected browser
@@ -178,9 +178,7 @@ class BrowserAutomation {
     this.clearTimers();
 
     await this.context.close();
-    await this.browser.close().catch((error) => {
-      console.log(error);
-    });
+    await this.browser.close();
     // принудительно очищаю все
     this.browser = undefined;
 

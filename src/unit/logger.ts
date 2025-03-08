@@ -13,7 +13,7 @@ class Logger {
           options: {
             colorize: false,
             singleLine: true,
-            ignore: "pid,hostname,time,level,threadId",
+            ignore: "pid,hostname,time,level,threadId,stack",
           },
         },
         {
@@ -34,12 +34,15 @@ class Logger {
 
   // Updated log methods
   info(message: string, context: object = {}): void {
-    this.logger.info(context, message);
-    // this.logger.info({ ...context, msg: message });
+    this.logger.info({ ...context, msg: message });
   }
 
-  error(message: string, context: object = {}): void {
-    this.logger.error({ ...context, msg: message });
+  error(error: Error | string, context: object = {}): void {
+    if (typeof error === "string") {
+      this.logger.error({ ...context, msg: error });
+    } else {
+      this.logger.error({ ...context, stack: error.stack });
+    }
   }
 
   warn(message: string, context: object = {}): void {

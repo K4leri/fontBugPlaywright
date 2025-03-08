@@ -10,6 +10,8 @@ interface Log {
   time: Date;
   level: number;
   threadId?: number;
+  msg: string | Error;
+  stack?: string;
   [key: string]: any;
 }
 
@@ -32,13 +34,12 @@ const formatter = (options: PrettyOptions) => {
         .slice(0, 19);
 
       const time = pc.white(`[${timestamp}]`);
-      const msg = pc.white(`${log[messageKey]}`);
+      const msg = pc.white(log[messageKey] ?? pc.red(log.stack));
       const threadId = log.threadId !== undefined ? ` ${log.threadId}` : "";
 
-      const level = levelMap[log.level].color(
+      return `${time} ${levelMap[log.level].color(
         `${levelMap[log.level].lvl}${threadId}: ${msg}`
-      );
-      return `${time} ${level}`;
+      )}`;
     },
   });
 };
