@@ -23,7 +23,7 @@ export class GameLoop {
 
   private async appendToFile(data: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      fs.appendFile("./numbers.txt", data + "\n", (err) => {
+      fs.appendFile("./numbers.txt", data, (err) => {
         if (err) {
           reject(err);
         } else {
