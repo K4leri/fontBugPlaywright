@@ -1,4 +1,4 @@
-# BM37 Node.js Application
+# fontBugPlaywright representation of fonts bug
 
 A Node.js application.
 
