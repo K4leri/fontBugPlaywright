@@ -1,10 +1,7 @@
 import type { Browser, BrowserContext, Page } from "playwright";
 import { chromium } from "playwright";
-import { newInjectedContext } from "fingerprint-injector";
 import logger from "../../unit/logger";
 import { config } from "./config";
-import { checkFileExists } from "../../unit/fsHelper";
-import { fingerprintManager } from "./fingerprinUtils";
 
 class BrowserAutomation {
   public browser: Browser | undefined;
@@ -66,52 +63,9 @@ class BrowserAutomation {
       this.browser = await this.connectToBrowserWithRetry();
     }
 
-    const filePath = `./state/state${this.threadId}.json`;
-    checkFileExists(filePath);
-
-    // Get generated values BEFORE injection
-    const { fingerprint, headers } = await fingerprintManager.getFingerprint(
-      this.threadId
-    );
-
-    // Create a new context with fingerprint injection
-    this.context = await newInjectedContext(this.browser, {
-      fingerprint: { fingerprint, headers },
-      newContextOptions: {
-        storageState: filePath,
-        viewport: {
-          height: fingerprint.screen.height,
-          width: fingerprint.screen.width,
-        },
-        screen: {
-          height: fingerprint.screen.height,
-          width: fingerprint.screen.width,
-        },
-        reducedMotion: "reduce",
-      },
-    });
-
+    this.context = await this.browser.newContext();
     // Create a new page
     this.page = await this.context.newPage();
-    // Optional: Use CDP to override device metrics (if args don't work)
-    // const session = await this.context.newCDPSession(this.page);
-    // await session.send("Emulation.setDeviceMetricsOverride", {
-    //   width: 1920,
-    //   height: 1080,
-    //   deviceScaleFactor: 1,
-    //   mobile: false,
-    //   screenWidth: 1920,
-    //   screenHeight: 1080,
-    // });
-
-    const innerDemensions = await this.page.evaluate(() => ({
-      viewport: { width: window.innerWidth, height: window.innerHeight },
-      outerWindow: { width: window.outerWidth, height: window.outerHeight },
-    }));
-
-    if (innerDemensions.outerWindow.height < 1020) {
-      throw new Error(JSON.stringify(innerDemensions.outerWindow));
-    }
 
     logger.info(`Browser context and page created successfully`, {
       threadId: this.threadId,

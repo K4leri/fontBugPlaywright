@@ -1,5 +1,3 @@
-import { PNG } from "pngjs";
-import { imageProcessor } from "../image/ImageProcessor";
 import { ImageService } from "./imageService";
 import { sleep } from "../../unit/sleep";
 
@@ -12,7 +10,7 @@ export class GameLoop {
 
   private processScreenshot(screenshotBuffer: Buffer) {
     try {
-      return imageProcessor.processImage(PNG.sync.read(screenshotBuffer));
+      return screenshotBuffer;
     } catch (error) {
       return undefined;
     }
