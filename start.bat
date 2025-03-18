@@ -30,7 +30,7 @@ if %errorlevel%==0 (
   echo Chrome is already running. Reusing existing instance.
 ) else (
   echo Starting Chrome...
-  start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --window-size=1920,1080  --mute-audio
+  start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --window-size=1920,1080 --mute-audio
 )
 
 echo Launching pm2 monit in a new window...
@@ -54,6 +54,7 @@ if exist "dist/index.js" (
 
 set NODE_ENV=production
 set PM2_LOG_COLOR=true
+set PW_TEST_SCREENSHOT_NO_FONTS_READY=1
 echo Restarting/Starting PM2 process...
 pm2 restart BM37 --silent || pm2 start dist/index.js --name BM37 --silent
 

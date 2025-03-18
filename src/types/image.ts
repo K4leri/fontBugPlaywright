@@ -4,6 +4,12 @@ export interface Color {
   b: number;
 }
 
+export interface ScreenShotOptiones {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 export interface ProcessingOptions {
   colorToKeep?: Color;
   backgroundColorToRemove?: Color;
@@ -17,4 +23,11 @@ export interface BackgroundRemovalOptions {
   targetColor?: Color;
   tolerance?: number;
   debug?: boolean;
+}
+
+// Enum to represent different image types
+export enum ImageType {
+  Normal = "numbers",
+  Clear = "clearNumbers",
+  Small = "smallNumbers",
 }

@@ -1,4 +1,9 @@
-export type FileType = "приемСтавок" | "ИдетИгра" | "ВыиграшПо" | "37";
+export type FileType =
+  | "приемСтавок"
+  | "ИдетИгра"
+  | "ВыиграшПо"
+  | "37"
+  | "black";
 
 // координаты лого при загрузке
 export const mainLogo = {
@@ -8,7 +13,7 @@ export const mainLogo = {
   height: 210,
 };
 
-// координаты текста чисел
+// координаты текста ("идетигра"/"прием ставок")
 export const textOnBord = {
   x: 400,
   y: 150,
@@ -22,6 +27,13 @@ export const numbers = {
   y: 193,
   width: 130,
   height: 54,
+};
+
+export const restoringNumbers = {
+  x: 63,
+  y: 290,
+  width: 55,
+  height: 780,
 };
 
 export interface Accounts {

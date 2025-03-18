@@ -1,68 +1,44 @@
 import { GameLoop } from "./gameLoop";
-import Methods from "../browser/methods";
-// import { browserManager } from "../../services/browserManager";
 import settings from "../../../settings.json";
 import logger from "../../unit/logger";
-
-interface ThreadContext {
-  initialize: () => Promise<void>;
-  close: () => Promise<void>;
-  gameLoop?: GameLoop;
-}
+import { ErrorCause } from "../../types/error";
+import BrowserAutomation from "../browser/base";
+import { ImageService } from "./imageService";
+import { prepare } from "./prepare";
 
 export class ThreadManager {
-  private threads = new Map<number, ThreadContext>();
+  private threads = new Map<number, BrowserAutomation>();
+  private LoopLastStartTime = new Map<number, number>();
 
-  private async createThread(threadId: number) {
-    try {
-      const context = this.threads.get(threadId);
-      if (!context) {
-        throw new Error(`Context not found`);
-      }
-
-      await context.initialize();
-
-      if (threadId === 0 && context.gameLoop) {
-        await context.gameLoop.start();
-      } else {
-        await new Promise((resolve) => setTimeout(() => resolve, 2147483647));
-      }
-    } catch (error) {
-      throw error;
-    }
+  private createGameLoop(base: BrowserAutomation, threadId: number) {
+    return new GameLoop(new ImageService(base.page), threadId);
   }
 
-  private async createThreadInstance(threadId: number) {
+  private async createThread(threadId: number) {
+    const base = new BrowserAutomation(threadId);
+    this.threads.set(threadId, base);
+
+    logger.info(`Пытаюсь запустить поток`, { threadId });
+
     try {
-      const methods = new Methods(threadId);
+      await base.initialize();
+      await prepare(base);
 
-      const context: ThreadContext = {
-        initialize: methods.initialize.bind(methods),
-        close: methods.close.bind(methods),
-        gameLoop:
-          threadId === 0
-            ? new GameLoop(methods.imageService, threadId)
-            : undefined,
-      };
-
-      this.threads.set(threadId, context);
-      logger.info(`Пытаюсь запустить поток`, {
-        threadId,
-      });
-
-      await this.createThread(threadId);
+      if (threadId === 0) {
+        const gameLoop = this.createGameLoop(base, threadId);
+        await gameLoop.start();
+      } else {
+        await new Promise(() => {});
+      }
     } catch (error) {
       throw error;
     }
   }
 
   private async handleRestartNeeded(threadId: number) {
-    const context = this.threads.get(threadId);
-    if (!context) return;
-
-    // context.methods.clearTimers();
-    // await browserManager.removeInstance(threadId);
-    await context.close();
+    const base = this.threads.get(threadId);
+    if (!base) return;
+    await base.close();
     this.threads.delete(threadId);
   }
 
@@ -70,10 +46,14 @@ export class ThreadManager {
     for (let threadId = 0; threadId < settings.threads; threadId++) {
       (async () => {
         while (true) {
-          await this.createThreadInstance(threadId).catch(async (error) => {
-            logger.error(error, { threadId });
+          try {
+            await this.createThread(threadId);
+          } catch (error) {
+            const err = error as Error & { cause: ErrorCause };
+            logger.error(err, { threadId });
+            this.LoopLastStartTime.set(threadId, err.cause?.startTime || 0);
             await this.handleRestartNeeded(threadId);
-          });
+          }
         }
       })();
     }

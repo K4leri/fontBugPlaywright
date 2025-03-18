@@ -3,12 +3,11 @@ import { chromium } from "playwright";
 import { newInjectedContext } from "fingerprint-injector";
 import logger from "../../unit/logger";
 import { config } from "./config";
-import { checkFileExists } from "../unit/fsHelper";
-import { generateHeapSnapshot } from "../../unit/heapSnapshot";
+import { checkFileExists } from "../../unit/fsHelper";
+import { fingerprintManager } from "./fingerprinUtils";
 
 class BrowserAutomation {
   public browser: Browser | undefined;
-  private intervalId: NodeJS.Timeout[] = [];
   context!: BrowserContext;
   page!: Page;
 
@@ -22,55 +21,15 @@ class BrowserAutomation {
       );
       config.options.threads = 1;
     }
-
-    const intervalId = setInterval(() => {
-      this.saveContext(this.threadId);
-    }, 60 * 1000 * 15);
-
-    this.intervalId.push(intervalId);
-
-    if (process.env.NODE_ENV === "development") {
-      this.setupHeapSnapshot();
-    }
-
-    // process.once("SIGINT", async () => {
-    //   logger.warn(`Stopping gracefully...`);
-    //   await this.saveContext(this.threadId);
-    //   await this.close();
-    //   process.exit(0);
-    // });
   }
 
-  private setupHeapSnapshot() {
-    const timeoutId = setTimeout(() => {
-      generateHeapSnapshot();
-    }, 60 * 1000 * 5);
-    const intervalId = setInterval(() => {
-      generateHeapSnapshot();
-    }, 60 * 1000 * 60); // каждый час
-
-    this.intervalId.push(timeoutId);
-    this.intervalId.push(intervalId);
-    // process.on("SIGUSR2", () => {
-    //   generateHeapSnapshot();
-    // });
-  }
-
-  protected clearTimers() {
-    this.intervalId.forEach((intervalId) => clearInterval(intervalId));
+  public async initialize() {
+    await this.prepare();
   }
 
   protected async prepare() {
     await this.create();
     await this.navigate("https://betboom.ru/game/tennis37_v2");
-  }
-
-  protected async saveContext(threadId: number) {
-    const path = `./state/state${threadId}.json`;
-    await this.context.storageState({ path }).catch((error) => {
-      logger.error(`cant save state to ${path}: ${error}`);
-      this.clearTimers();
-    });
   }
 
   async connectToBrowserWithRetry(): Promise<Browser> {
@@ -110,55 +69,54 @@ class BrowserAutomation {
     const filePath = `./state/state${this.threadId}.json`;
     checkFileExists(filePath);
 
+    // Get generated values BEFORE injection
+    const { fingerprint, headers } = await fingerprintManager.getFingerprint(
+      this.threadId
+    );
+
     // Create a new context with fingerprint injection
     this.context = await newInjectedContext(this.browser, {
-      fingerprintOptions: {
-        devices: ["desktop"],
-        operatingSystems: ["windows"],
-        screen: {
-          minHeight: 1080,
-          maxHeight: 1080,
-          minWidth: 1920,
-          maxWidth: 1920,
-        },
-      },
+      fingerprint: { fingerprint, headers },
       newContextOptions: {
         storageState: filePath,
-        viewport: { height: 1080, width: 1920 },
-        screen: { height: 1080, width: 1920 },
+        viewport: {
+          height: fingerprint.screen.height,
+          width: fingerprint.screen.width,
+        },
+        screen: {
+          height: fingerprint.screen.height,
+          width: fingerprint.screen.width,
+        },
+        reducedMotion: "reduce",
       },
     });
 
     // Create a new page
     this.page = await this.context.newPage();
-    // Set device metrics for the page
+    // Optional: Use CDP to override device metrics (if args don't work)
     // const session = await this.context.newCDPSession(this.page);
     // await session.send("Emulation.setDeviceMetricsOverride", {
     //   width: 1920,
     //   height: 1080,
     //   deviceScaleFactor: 1,
     //   mobile: false,
+    //   screenWidth: 1920,
+    //   screenHeight: 1080,
     // });
+
+    const innerDemensions = await this.page.evaluate(() => ({
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      outerWindow: { width: window.outerWidth, height: window.outerHeight },
+    }));
+
+    if (innerDemensions.outerWindow.height < 1020) {
+      throw new Error(JSON.stringify(innerDemensions.outerWindow));
+    }
 
     logger.info(`Browser context and page created successfully`, {
       threadId: this.threadId,
     });
   }
-
-  // private getBrowserType(): typeof chromium | typeof firefox | typeof webkit {
-  //   switch (config.options.browserType) {
-  //     case "chromium":
-  //       return chromium;
-  //     case "firefox":
-  //       return firefox;
-  //     case "webkit":
-  //       return webkit;
-  //     default:
-  //       throw new Error(
-  //         `Unsupported browser type: ${config.options.browserType}`
-  //       );
-  //   }
-  // }
 
   async navigate(url: string): Promise<void> {
     if (!this.page) {
@@ -174,8 +132,6 @@ class BrowserAutomation {
     if (!this.browser) {
       throw new Error("Browser not initialized");
     }
-
-    this.clearTimers();
 
     await this.context.close();
     await this.browser.close();

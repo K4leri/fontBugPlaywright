@@ -12,7 +12,10 @@ class ImageProcessor {
     originalImage: PNG,
     options: ProcessingOptions = {}
   ): number {
-    const { colorThreshold = 10, neighborRadius = 1 } = options;
+    const { colorToKeep, colorThreshold = 10, neighborRadius = 1 } = options;
+
+    const isWhitelooking = colorToKeep === undefined;
+
     let result = -1;
     for (let x = 0; x < originalImage.width; x++) {
       for (let y = 0; y < originalImage.height; y++) {
@@ -39,12 +42,22 @@ class ImageProcessor {
               };
 
               // isWhitecolor
-              if (
-                pixelColor.r >= 255 - colorThreshold &&
-                pixelColor.g >= 255 - colorThreshold &&
-                pixelColor.b >= 255 - colorThreshold
-              ) {
-                whiteNeighbors++;
+              if (isWhitelooking) {
+                if (
+                  pixelColor.r >= 255 - colorThreshold &&
+                  pixelColor.g >= 255 - colorThreshold &&
+                  pixelColor.b >= 255 - colorThreshold
+                ) {
+                  whiteNeighbors++;
+                }
+              } else {
+                if (
+                  Math.abs(pixelColor.r - colorToKeep.r) <= colorThreshold &&
+                  Math.abs(pixelColor.g - colorToKeep.g) <= colorThreshold &&
+                  Math.abs(pixelColor.b - colorToKeep.b) <= colorThreshold
+                ) {
+                  whiteNeighbors++;
+                }
               }
             }
           }
@@ -224,6 +237,39 @@ class ImageProcessor {
     return croppedPng;
   }
 
+  // underDev
+  resizeImage(image: PNG, scaleFactor: number): PNG {
+    // Calculate new dimensions
+    const newWidth = Math.round(image.width * scaleFactor);
+    const newHeight = Math.round(image.height * scaleFactor);
+
+    // Create a new PNG for the resized image
+    const resizedImage = new PNG({ width: newWidth, height: newHeight });
+
+    // Map pixels from the original image to the resized image
+    for (let y = 0; y < newHeight; y++) {
+      for (let x = 0; x < newWidth; x++) {
+        // Calculate the corresponding pixel in the original image
+        const origX = Math.floor(x / scaleFactor);
+        const origY = Math.floor(y / scaleFactor);
+
+        // Get the pixel index in the original image
+        const origIdx = (origY * image.width + origX) << 2;
+
+        // Get the pixel index in the resized image
+        const resizedIdx = (y * newWidth + x) << 2;
+
+        // Copy RGBA values
+        resizedImage.data[resizedIdx] = image.data[origIdx]; // R
+        resizedImage.data[resizedIdx + 1] = image.data[origIdx + 1]; // G
+        resizedImage.data[resizedIdx + 2] = image.data[origIdx + 2]; // B
+        resizedImage.data[resizedIdx + 3] = image.data[origIdx + 3]; // A
+      }
+    }
+
+    return resizedImage;
+  }
+
   /**
    * Processes an image by performing the following steps:
    * 1. Finds the first white pixel in the image.
@@ -239,18 +285,18 @@ class ImageProcessor {
    * @returns A Promise that resolves to the processed image buffer.
    * @throws Throws an error if no white pixels are found in the image.
    */
-  public processImage(buffer: Buffer, options: ProcessingOptions = {}): PNG {
-    const originalImage = PNG.sync.read(buffer);
-
+  public processImage(png: PNG, options: ProcessingOptions = {}): PNG {
     // Find the first white pixel
-    const startX = this.findFirstWhiteX(originalImage, options);
+    const startX = this.findFirstWhiteX(png, options);
 
     if (startX === -1) {
-      throw new Error("No white pixels found");
+      throw new Error(
+        `No ${options.colorToKeep ? options.colorToKeep : "white"} pixels found`
+      );
     }
 
     // Crop the image to the first white pixel
-    const croppedImage = this.cropImageToFirstPixel(originalImage, startX);
+    const croppedImage = this.cropImageToFirstPixel(png, startX);
 
     // Remove background
     const imageWithoutBackground = this.removeBackgroundColor(croppedImage);

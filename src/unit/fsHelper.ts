@@ -18,3 +18,11 @@ export function checkFileExists(filePath: string): void {
     }
   }
 }
+
+export function writeToFile(buffer: Buffer, folder = "mainWindow") {
+  try {
+    fs.writeFileSync(`./debug/${folder}/${Date.now()}.png`, buffer);
+  } catch (err) {
+    console.error(err);
+  }
+}
