@@ -1,0 +1,6 @@
+*
+!.gitignore
+!.gitkeep
+!dump/
+!fullPage/
+!mainWindow/
