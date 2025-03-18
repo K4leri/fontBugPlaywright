@@ -25,7 +25,7 @@ To get started with this application, follow these steps:
 ### Installation
 
 1. Clone this repository using `git clone https://github.com/K4leri/fontBugPlaywright`
-2. Navigate to the project directory using `cd bm37`
+2. Navigate to the project directory using `cd fontBugPlaywright`
 3. Run `install.bat` to install dependencies and follow instructions
 4. Run `start.bat` to launch the application
 
